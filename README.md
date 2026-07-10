@@ -21,9 +21,11 @@ uv run scripts/plot_results.py
 This generates a small linear dataset, runs `N` independent martingale
 trajectories that each resample from the data and update the slope estimate
 in closed form (recursive least squares, no learning rate to tune), and
-plots the trajectories together with a histogram of the resulting
+plots the data, the trajectories, and a histogram of the resulting
 `theta_infty` values — a posterior over the slope obtained without ever
-specifying a prior.
+specifying a prior. Trajectories and histogram bars are colored by their
+`theta_infty` value on the same diverging scale, so the two figures read
+together.
 
 Each script reads `config/default.toml` by default; pass `--config` to
 point at a different config (e.g. a different `theta_star`, noise level, or
@@ -36,6 +38,6 @@ sample size).
   linear model. Named for the model (`_linear`) so other data-generating
   scripts can live alongside it later.
 - `scripts/run_martingale.py` — runs the martingale procedure.
-- `scripts/plot_results.py` — makes the trajectory and histogram figures.
+- `scripts/plot_results.py` — makes the data, trajectory, and histogram figures.
 - `data/` — generated datasets and results (gitignored, regenerate anytime).
 - `figures/` — output PNGs.
