@@ -73,7 +73,7 @@ def plot_trajectories(theta_traj, x_traj, theta_star, S_n, n, M, num_plot, path)
     ax.axhline(theta_star, color="black", linestyle="--", linewidth=2, label=r"$\theta^*$")
 
     theta_hat_n = float(theta_traj[0, 0])
-    ax.plot(0, theta_hat_n, "o", color="black", markersize=12, zorder=5, clip_on=False,
+    ax.plot(0, theta_hat_n, "o", color="black", markersize=8, zorder=5, clip_on=False,
             label=rf"$\hat\theta_0 \approx {theta_hat_n:.2f}$")
 
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=Normalize(0, 1))
