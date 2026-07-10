@@ -1,0 +1,15 @@
+seed = 0
+
+# data generation (true linear model: y = theta_star * x + noise)
+theta_star = 2.0
+sigma = 0.5
+n = 20
+x_min = -1.0
+x_max = 1.0
+
+# martingale procedure
+M = 500
+N = 2000
+
+# plotting
+num_trajectories_plot = 15
