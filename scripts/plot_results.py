@@ -4,6 +4,7 @@ import argparse
 import tomllib
 
 import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
 from matplotlib.colors import TwoSlopeNorm
 import numpy as np
 
@@ -36,6 +37,9 @@ def plot_data(x, y, theta_star, path):
     fig, ax = plt.subplots(figsize=(8, 5))
     style_axes(ax, fig)
 
+    ax.axhline(0, color="gray", linewidth=1, alpha=0.4, zorder=0)
+    ax.axvline(0, color="gray", linewidth=1, alpha=0.4, zorder=0)
+
     x_line = np.array([x.min(), x.max()])
     ax.plot(x_line, theta_star * x_line, color="black", linestyle="--", linewidth=2,
             label="True line", zorder=1)
@@ -50,18 +54,33 @@ def plot_data(x, y, theta_star, path):
     fig.savefig(path, dpi=150, bbox_inches="tight")
 
 
-def plot_trajectories(theta_traj, theta_infty, theta_star, n, M, num_plot, path):
+def plot_trajectories(theta_traj, x_traj, theta_infty, theta_star, S_n, n, M, num_plot, path):
     m = np.arange(n, M + 1)
     cmap = plt.get_cmap(CMAP)
     norm = value_norm(theta_infty, theta_star)
+    alpha_min, alpha_max = 0.15, 0.9
 
     fig, ax = plt.subplots(figsize=(8, 5))
     style_axes(ax, fig)
 
-    for traj in theta_traj[:num_plot]:
+    for traj, x_seq in zip(theta_traj[:num_plot], x_traj[:num_plot]):
+        # S_m = sum of x_i^2 seen so far: the accumulated information that drives
+        # the update's step size down. Use it (not raw m) to fade in each line.
+        S = np.concatenate([[S_n], S_n + np.cumsum(x_seq**2)])
+        progress = (S - S_n) / (S[-1] - S_n)
+        alpha = alpha_min + (alpha_max - alpha_min) * progress
+
         color = cmap(norm(traj[-1]))
-        ax.plot(m, traj, color=color, alpha=0.75, linewidth=2.2)
+        points = np.array([m, traj]).T.reshape(-1, 1, 2)
+        segments = np.concatenate([points[:-1], points[1:]], axis=1)
+        lc = LineCollection(segments, colors=[(*color[:3], a) for a in alpha[:-1]],
+                             linewidths=2.2)
+        ax.add_collection(lc)
         ax.plot(m[-1], traj[-1], "o", color=color, markersize=6)
+
+    ymin, ymax = theta_traj[:num_plot].min(), theta_traj[:num_plot].max()
+    pad = 0.05 * (ymax - ymin)
+    ax.set_ylim(ymin - pad, ymax + pad)
     ax.axhline(theta_star, color="black", linestyle="--", linewidth=2, label="True value")
 
     theta_hat_n = float(theta_traj[0, 0])
@@ -89,16 +108,10 @@ def plot_trajectories(theta_traj, theta_infty, theta_star, n, M, num_plot, path)
 
 
 def plot_histogram(theta_infty, theta_star, path):
-    cmap = plt.get_cmap(CMAP)
-    norm = value_norm(theta_infty, theta_star)
-
     fig, ax = plt.subplots(figsize=(8, 5))
     style_axes(ax, fig)
 
-    _, bin_edges, patches = ax.hist(theta_infty, bins=40, edgecolor=BG_COLOR)
-    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
-    for center, patch in zip(bin_centers, patches):
-        patch.set_facecolor(cmap(norm(center)))
+    ax.hist(theta_infty, bins=40, color=ACCENT_COLOR, edgecolor=BG_COLOR)
     ax.axvline(theta_star, color="black", linestyle="--", linewidth=2, label="True value")
 
     ax.set_xlabel(r"$\theta_\infty$", fontsize=16, fontweight="bold")
@@ -121,8 +134,10 @@ def main():
     plot_data(dataset["x"], dataset["y"], config["theta_star"], "figures/data.png")
     plot_trajectories(
         results["theta_traj"],
+        results["x_traj"],
         results["theta_infty"],
         config["theta_star"],
+        float(np.sum(dataset["x"] ** 2)),
         config["n"],
         config["M"],
         config["num_trajectories_plot"],
