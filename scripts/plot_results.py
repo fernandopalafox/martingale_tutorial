@@ -92,7 +92,7 @@ def plot_trajectories(theta_traj, x_traj, theta_star, S_n, n, M, num_plot, path)
     cbar.outline.set_linewidth(2.0)
 
     ax.set_xlabel("Iteration ($m$)", fontsize=16, fontweight="bold")
-    ax.set_ylabel(r"$\hat\theta_m$", fontsize=16, fontweight="bold")
+    ax.set_ylabel(r"Parameter estimate ($\hat\theta_m$)", fontsize=16, fontweight="bold")
     ax.set_title("Martingale trajectories", fontsize=17, fontweight="bold")
     ax.set_xlim(0, M - n)
     ax.legend(fontsize=14, loc="lower right")
