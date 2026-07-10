@@ -1,7 +1,7 @@
 seed = 0
 
 # data generation (true linear model: y = theta_star * x + noise)
-theta_star = 2.0
+theta_star = 1.0
 sigma = 0.5
 n = 20
 x_min = -1.0

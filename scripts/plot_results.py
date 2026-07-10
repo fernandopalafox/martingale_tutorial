@@ -5,11 +5,12 @@ import tomllib
 
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
-from matplotlib.colors import to_rgb
+from matplotlib.colors import Normalize
 import numpy as np
 
 BG_COLOR = "#F2E4D4"
-ACCENT_COLOR = "#8B5E3C"
+ACCENT_COLOR = "#3B6E8F"
+CONVERGENCE_CMAP = "plasma"
 
 
 def load_config(path):
@@ -48,7 +49,7 @@ def plot_data(x, y, theta_star, path):
 
 def plot_trajectories(theta_traj, x_traj, theta_star, S_n, n, M, num_plot, path):
     m = np.arange(n, M + 1)
-    accent_rgb = to_rgb(ACCENT_COLOR)
+    cmap = plt.get_cmap(CONVERGENCE_CMAP)
     alpha_min, alpha_max = 0.15, 0.9
 
     fig, ax = plt.subplots(figsize=(8, 5))
@@ -56,17 +57,19 @@ def plot_trajectories(theta_traj, x_traj, theta_star, S_n, n, M, num_plot, path)
 
     for traj, x_seq in zip(theta_traj[:num_plot], x_traj[:num_plot]):
         # S_m = sum of x_i^2 seen so far: the accumulated information that drives
-        # the update's step size down. Use it (not raw m) to fade in each line.
+        # the update's step size down. Use it (not raw m) as our convergence measure,
+        # both for color (dark/purple = unconverged, bright/yellow = converged) and
+        # for fading each line in as it goes.
         S = np.concatenate([[S_n], S_n + np.cumsum(x_seq**2)])
         progress = (S - S_n) / (S[-1] - S_n)
         alpha = alpha_min + (alpha_max - alpha_min) * progress
 
         points = np.array([m, traj]).T.reshape(-1, 1, 2)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        lc = LineCollection(segments, colors=[(*accent_rgb, a) for a in alpha[:-1]],
-                             linewidths=2.2)
+        seg_colors = [(*cmap(p)[:3], a) for p, a in zip(progress[:-1], alpha[:-1])]
+        lc = LineCollection(segments, colors=seg_colors, linewidths=2.2)
         ax.add_collection(lc)
-        ax.plot(m[-1], traj[-1], "o", color=ACCENT_COLOR, markersize=6, alpha=alpha_max)
+        ax.plot(m[-1], traj[-1], "o", color=cmap(1.0), markersize=6, alpha=alpha_max)
 
     ymin, ymax = theta_traj[:num_plot].min(), theta_traj[:num_plot].max()
     pad = 0.05 * (ymax - ymin)
@@ -76,6 +79,15 @@ def plot_trajectories(theta_traj, x_traj, theta_star, S_n, n, M, num_plot, path)
     theta_hat_n = float(theta_traj[0, 0])
     ax.plot(n, theta_hat_n, "o", color="dimgray", markersize=8, zorder=5,
             label=rf"$\hat\theta_n \approx {theta_hat_n:.2f}$")
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=Normalize(0, 1))
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=ax, pad=0.01)
+    cbar.set_label("Convergence", fontsize=16, fontweight="bold")
+    cbar.set_ticks([0, 1])
+    cbar.set_ticklabels(["Unconverged", "Converged"])
+    cbar.ax.tick_params(labelsize=12, width=2.0)
+    cbar.outline.set_linewidth(2.0)
 
     ax.set_xlabel("Iteration", fontsize=16, fontweight="bold")
     ax.set_ylabel(r"$\hat\theta_m$", fontsize=16, fontweight="bold")
