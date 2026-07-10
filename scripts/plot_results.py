@@ -73,15 +73,21 @@ def plot_trajectories(theta_traj, x_traj, theta_star, S_n, n, M, num_plot, path)
     ax.axhline(theta_star, color="black", linestyle="--", linewidth=2, label=r"$\theta^*$")
 
     theta_hat_n = float(theta_traj[0, 0])
-    ax.plot(0, theta_hat_n, "o", color="black", markersize=12, zorder=5,
-            label=rf"$\hat\theta_n \approx {theta_hat_n:.2f}$")
+    ax.plot(0, theta_hat_n, "o", color="black", markersize=12, zorder=5, clip_on=False,
+            label=rf"$\hat\theta_0 \approx {theta_hat_n:.2f}$")
 
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=Normalize(0, 1))
     sm.set_array([])
     cbar = fig.colorbar(sm, ax=ax, pad=0.01)
     cbar.set_ticks([0, 1])
-    cbar.ax.set_yticklabels(["Not converged", "Converged"], rotation=90, va="center",
+    cbar.ax.set_yticklabels(["Not converged", "Converged"], rotation=90,
                              fontsize=14, fontweight="bold")
+    # Anchor each label toward the bar's interior instead of centering on the
+    # tick, so they don't poke past the top/bottom edge and inflate the
+    # saved figure's bounding box with blank margin.
+    labels = cbar.ax.get_yticklabels()
+    labels[0].set_va("bottom")
+    labels[1].set_va("top")
     cbar.ax.tick_params(width=2.0, pad=0)
     cbar.outline.set_linewidth(2.0)
 
