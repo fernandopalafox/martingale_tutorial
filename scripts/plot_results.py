@@ -10,7 +10,7 @@ import numpy as np
 
 BG_COLOR = "#F2E4D4"
 ACCENT_COLOR = "#3B6E8F"
-CONVERGENCE_CMAP = "plasma"
+CONVERGENCE_CMAP = "plasma_r"
 
 
 def load_config(path):
@@ -48,9 +48,8 @@ def plot_data(x, y, theta_star, path):
 
 
 def plot_trajectories(theta_traj, x_traj, theta_star, S_n, n, M, num_plot, path):
-    m = np.arange(n, M + 1)
+    m = np.arange(M - n + 1)  # iterations of the resampling loop, starting at 0
     cmap = plt.get_cmap(CONVERGENCE_CMAP)
-    alpha_min, alpha_max = 0.15, 0.9
 
     fig, ax = plt.subplots(figsize=(8, 5))
     style_axes(ax, fig)
@@ -58,18 +57,15 @@ def plot_trajectories(theta_traj, x_traj, theta_star, S_n, n, M, num_plot, path)
     for traj, x_seq in zip(theta_traj[:num_plot], x_traj[:num_plot]):
         # S_m = sum of x_i^2 seen so far: the accumulated information that drives
         # the update's step size down. Use it (not raw m) as our convergence measure,
-        # both for color (dark/purple = unconverged, bright/yellow = converged) and
-        # for fading each line in as it goes.
+        # coloring dark/purple = unconverged through bright/yellow = converged.
         S = np.concatenate([[S_n], S_n + np.cumsum(x_seq**2)])
         progress = (S - S_n) / (S[-1] - S_n)
-        alpha = alpha_min + (alpha_max - alpha_min) * progress
 
         points = np.array([m, traj]).T.reshape(-1, 1, 2)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        seg_colors = [(*cmap(p)[:3], a) for p, a in zip(progress[:-1], alpha[:-1])]
-        lc = LineCollection(segments, colors=seg_colors, linewidths=2.2)
+        lc = LineCollection(segments, colors=[cmap(p) for p in progress[:-1]], linewidths=2.2)
         ax.add_collection(lc)
-        ax.plot(m[-1], traj[-1], "o", color=cmap(1.0), markersize=6, alpha=alpha_max)
+        ax.plot(m[-1], traj[-1], "o", color=cmap(1.0), markersize=6)
 
     ymin, ymax = theta_traj[:num_plot].min(), theta_traj[:num_plot].max()
     pad = 0.05 * (ymax - ymin)
@@ -77,22 +73,23 @@ def plot_trajectories(theta_traj, x_traj, theta_star, S_n, n, M, num_plot, path)
     ax.axhline(theta_star, color="black", linestyle="--", linewidth=2, label=r"$\theta^*$")
 
     theta_hat_n = float(theta_traj[0, 0])
-    ax.plot(n, theta_hat_n, "o", color="dimgray", markersize=8, zorder=5,
+    ax.plot(0, theta_hat_n, "o", color="black", markersize=12, zorder=5,
             label=rf"$\hat\theta_n \approx {theta_hat_n:.2f}$")
 
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=Normalize(0, 1))
     sm.set_array([])
     cbar = fig.colorbar(sm, ax=ax, pad=0.01)
     cbar.set_ticks([0, 1])
-    cbar.set_ticklabels(["Not converged", "Converged"], rotation=90, va="center")
-    cbar.ax.tick_params(labelsize=13, width=2.0)
+    cbar.ax.set_yticklabels(["Not converged", "Converged"], rotation=90, va="center",
+                             fontsize=14, fontweight="bold")
+    cbar.ax.tick_params(width=2.0, pad=0)
     cbar.outline.set_linewidth(2.0)
 
     ax.set_xlabel("Iteration ($m$)", fontsize=16, fontweight="bold")
     ax.set_ylabel(r"$\hat\theta_m$", fontsize=16, fontweight="bold")
     ax.set_title("Martingale trajectories", fontsize=17, fontweight="bold")
-    ax.set_xlim(n, M)
-    ax.legend(fontsize=14)
+    ax.set_xlim(0, M - n)
+    ax.legend(fontsize=14, loc="lower right")
     fig.tight_layout(pad=0.5)
     fig.savefig(path, dpi=150, bbox_inches="tight")
 
