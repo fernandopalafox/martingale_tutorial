@@ -13,8 +13,9 @@ post's prose lives and is edited in that repo, following its
 ## Figures
 
 - Generate and iterate on figures here.
-- Once a figure is final, copy it into `content/research/media/` in the
-  website repo and reference it from the post with:
+- Once a figure is final, copy it into `content/media/` (a sibling of
+  `content/research/`, not a subdirectory of it) in the website repo and
+  reference it from the post with:
   `<img src="media/name.ext" alt="" style="width:75%">`
 - Don't embed figures anywhere else in the website repo.
 
