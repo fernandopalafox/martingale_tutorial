@@ -45,20 +45,21 @@ def main():
     args = parser.parse_args()
 
     config = load_config(args.config)
-    dataset = np.load("data/dataset.npz")
+    dataset = np.load(f"data/dataset_{config['label']}.npz")
     x, y = jnp.array(dataset["x"]), jnp.array(dataset["y"])
 
     key = jax.random.PRNGKey(config["seed"])
     theta_infty, theta_traj, x_traj, y_traj = run_martingale(key, x, y, config)
 
+    out_path = f"data/martingale_results_{config['label']}.npz"
     np.savez(
-        "data/martingale_results.npz",
+        out_path,
         theta_infty=np.asarray(theta_infty),
         theta_traj=np.asarray(theta_traj),
         x_traj=np.asarray(x_traj),
         y_traj=np.asarray(y_traj),
     )
-    print(f"Ran {config['N']} martingale trajectories to data/martingale_results.npz")
+    print(f"Ran {config['N']} martingale trajectories to {out_path}")
 
 
 if __name__ == "__main__":

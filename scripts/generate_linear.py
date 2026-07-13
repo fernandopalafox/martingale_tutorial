@@ -29,8 +29,9 @@ def main():
     key = jax.random.PRNGKey(config["seed"])
     x, y = generate_data(key, config)
 
-    np.savez("data/dataset.npz", x=np.asarray(x), y=np.asarray(y))
-    print(f"Saved {config['n']} points to data/dataset.npz")
+    out_path = f"data/dataset_{config['label']}.npz"
+    np.savez(out_path, x=np.asarray(x), y=np.asarray(y))
+    print(f"Saved {config['n']} points to {out_path}")
 
 
 if __name__ == "__main__":

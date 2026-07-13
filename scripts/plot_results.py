@@ -4,13 +4,10 @@ import argparse
 import tomllib
 
 import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
-from matplotlib.colors import Normalize
 import numpy as np
 
 BG_COLOR = "#F2E4D4"
 ACCENT_COLOR = "#3B6E8F"
-CONVERGENCE_CMAP = "plasma_r"
 
 
 def load_config(path):
@@ -36,7 +33,7 @@ def plot_data(x, y, theta_star, path):
     x_line = np.array([x.min(), x.max()])
     ax.plot(x_line, theta_star * x_line, color="black", linestyle="--", linewidth=2,
             label="True line", zorder=1)
-    ax.scatter(x, y, color=ACCENT_COLOR, s=60, edgecolor=BG_COLOR, linewidth=1.2,
+    ax.scatter(x, y, color=ACCENT_COLOR, s=110, edgecolor=BG_COLOR, linewidth=2.2,
                zorder=2, label="Observed data")
 
     ax.set_xlabel("x", fontsize=16, fontweight="bold")
@@ -47,25 +44,15 @@ def plot_data(x, y, theta_star, path):
     fig.savefig(path, dpi=150, bbox_inches="tight")
 
 
-def plot_trajectories(theta_traj, x_traj, theta_star, S_n, n, M, num_plot, path):
+def plot_trajectories(theta_traj, theta_star, n, M, num_plot, path):
     m = np.arange(M - n + 1)  # iterations of the resampling loop, starting at 0
-    cmap = plt.get_cmap(CONVERGENCE_CMAP)
 
     fig, ax = plt.subplots(figsize=(8, 5))
     style_axes(ax, fig)
 
-    for traj, x_seq in zip(theta_traj[:num_plot], x_traj[:num_plot]):
-        # S_m = sum of x_i^2 seen so far: the accumulated information that drives
-        # the update's step size down. Use it (not raw m) as our convergence measure,
-        # coloring dark/purple = unconverged through bright/yellow = converged.
-        S = np.concatenate([[S_n], S_n + np.cumsum(x_seq**2)])
-        progress = (S - S_n) / (S[-1] - S_n)
-
-        points = np.array([m, traj]).T.reshape(-1, 1, 2)
-        segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        lc = LineCollection(segments, colors=[cmap(p) for p in progress[:-1]], linewidths=2.2)
-        ax.add_collection(lc)
-        ax.plot(m[-1], traj[-1], "o", color=cmap(1.0), markersize=6)
+    for i, traj in enumerate(theta_traj[:num_plot]):
+        ax.plot(m, traj, color=ACCENT_COLOR, linewidth=1.8, alpha=0.7,
+                label="Trajectories" if i == 0 else None)
 
     ymin, ymax = theta_traj[:num_plot].min(), theta_traj[:num_plot].max()
     pad = 0.05 * (ymax - ymin)
@@ -75,21 +62,6 @@ def plot_trajectories(theta_traj, x_traj, theta_star, S_n, n, M, num_plot, path)
     theta_hat_n = float(theta_traj[0, 0])
     ax.plot(0, theta_hat_n, "o", color="black", markersize=8, zorder=5, clip_on=False,
             label=rf"$\hat\theta_0 \approx {theta_hat_n:.2f}$")
-
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=Normalize(0, 1))
-    sm.set_array([])
-    cbar = fig.colorbar(sm, ax=ax, pad=0.01)
-    cbar.set_ticks([0, 1])
-    cbar.ax.set_yticklabels(["Not converged", "Converged"], rotation=90,
-                             fontsize=14, fontweight="bold")
-    # Anchor each label toward the bar's interior instead of centering on the
-    # tick, so they don't poke past the top/bottom edge and inflate the
-    # saved figure's bounding box with blank margin.
-    labels = cbar.ax.get_yticklabels()
-    labels[0].set_va("bottom")
-    labels[1].set_va("top")
-    cbar.ax.tick_params(width=2.0, pad=0)
-    cbar.outline.set_linewidth(2.0)
 
     ax.set_xlabel("Iteration ($m$)", fontsize=16, fontweight="bold")
     ax.set_ylabel(r"Parameter estimate ($\hat\theta_m$)", fontsize=16, fontweight="bold")
@@ -121,24 +93,25 @@ def main():
     args = parser.parse_args()
 
     config = load_config(args.config)
-    dataset = np.load("data/dataset.npz")
-    results = np.load("data/martingale_results.npz")
+    label = config["label"]
+    dataset = np.load(f"data/dataset_{label}.npz")
+    results = np.load(f"data/martingale_results_{label}.npz")
 
-    plot_data(dataset["x"], dataset["y"], config["theta_star"], "figures/data.png")
+    data_path = f"figures/data_{label}.png"
+    trajectories_path = f"figures/trajectories_{label}.png"
+    histogram_path = f"figures/posterior_histogram_{label}.png"
+
+    plot_data(dataset["x"], dataset["y"], config["theta_star"], data_path)
     plot_trajectories(
         results["theta_traj"],
-        results["x_traj"],
         config["theta_star"],
-        float(np.sum(dataset["x"] ** 2)),
         config["n"],
         config["M"],
         config["num_trajectories_plot"],
-        "figures/trajectories.png",
+        trajectories_path,
     )
-    plot_histogram(
-        results["theta_infty"], config["theta_star"], "figures/posterior_histogram.png"
-    )
-    print("Saved figures/data.png, figures/trajectories.png, figures/posterior_histogram.png")
+    plot_histogram(results["theta_infty"], config["theta_star"], histogram_path)
+    print(f"Saved {data_path}, {trajectories_path}, {histogram_path}")
 
 
 if __name__ == "__main__":
