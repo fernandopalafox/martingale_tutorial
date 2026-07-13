@@ -1,8 +1,8 @@
 # martingale_tutorial
 
 Demo of prior-free uncertainty quantification via martingales, for a simple
-linear model with an unknown slope. Companion code for Part 2 of the blog
-post, at `content/research/martingale2.md` in `fernandopalafox.github.io`.
+linear model with an unknown slope. Companion code for [Part 2](https://palafox.info/research/martingale2)
+of the blog post ([Part 1](https://palafox.info/research/martingale1) here).
 
 <p align="center">
   <img src="figures/data_comparison.png" alt="Observed data, informative vs. uninformative sampling" width="32%">
